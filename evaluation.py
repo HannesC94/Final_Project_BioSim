@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-
+from evaluation_functions import *
 # %% read in data
-path_phi = 'ad_angle_PHI.xvg'
-path_psi = 'ad_angle_PSI.xvg'
+path_phi = 'simulation_data/ad_angle_PHI.xvg'
+path_psi = 'simulation_data/ad_angle_PSI.xvg'
 # read in the files for psi and phi
 psi_raw = pd.read_csv(path_psi, header=None, skiprows=range(17), sep='\s+')
 phi_raw = pd.read_csv(path_phi, header=None, skiprows=range(17), sep='\s+')
@@ -15,117 +15,59 @@ psi[:, 1] *= 2*np.pi/360
 phi = phi_raw.values
 phi[:, 1] *= 2*np.pi/360
 
-# %%
-# define two indices, which are going to be used to get a psiedge/phiedge value. along these values the intensity of the rachmandran plot ist shown
-phi_idx, psi_idx = [70, 72]
-# define figure
-fig, [ax1, ax2] = plt.subplots(1, 2, figsize=[12, 5])
-# create histogram data for phi/psi plot
-histogram = ax1.hist2d(phi[:, 1], psi[:, 1], bins=100, density=True)
-h = histogram[0]
-phi_edges = histogram[1]
-psi_edges = histogram[2]
-phi_c = phi_edges[phi_idx]
-psi_c = psi_edges[psi_idx]
 
-ax1.hlines(y=psi_c, xmin=-np.pi, xmax=np.pi, color='b')
-ax1.vlines(x=phi_c, ymin=-np.pi, ymax=np.pi, color='r')
-ax1.set_xlabel('Phi [rad]')
-ax1.set_ylabel('Psi [rad]')
-ax2.plot(phi_edges[:-1], h[:, psi_idx], label='Psi:'+str(psi_c))
-ax2.plot(psi_edges[:-1], h[phi_idx, :], label='Phi:'+str(phi_c), color='r')
-ax2.set_ylim(0, np.max(h))
-fig.colorbar(histogram[3], ax=ax1)
-
-plt.legend()
-plt.tight_layout()
-plt.show()
+# %% 2.2 visualisation of psi/phi plane
+ramachandran_plot(phi, psi, xy_idx=[0.1, 0.9])
 
 
-# %% define rectangular region for the different states
-# index files idx_rec = [[phi_min, phi_max], [psi_min, psi_max]]
-s3_rec = [[-np.pi, np.pi], [-2, 1.3]]
-
-psi_is_3 = np.asarray((psi[:, 1] >= s3_rec[1][0]) & (psi[:, 1] < s3_rec[1][1]))
-idx_state3 = np.copy(psi_is_3)
-
-s2_rec = [[-2.07, 1.3], [-np.pi, -2]]
-s2_rec_2 = [[-2.07, 1.3], [1.3, np.pi]]
-
-phi_is_2 = np.asarray((phi[:, 1] >= s2_rec[0][0]) & (phi[:, 1] < s2_rec[0][1]))
-psi_is_2 = np.asarray((psi[:, 1] >= s2_rec[1][0]) & (psi[:, 1] < s2_rec[1][1]))
-# combine with index for other rectangle
-phi_is_2 = np.logical_or(phi_is_2, np.asarray(
-    (phi[:, 1] >= s2_rec_2[0][0]) & (phi[:, 1] < s2_rec_2[0][1])))
-psi_is_2 = np.logical_or(psi_is_2, np.asarray(
-    (psi[:, 1] >= s2_rec_2[1][0]) & (psi[:, 1] < s2_rec_2[1][1])))
-
-idx_state2 = np.logical_and(phi_is_2, psi_is_2)
-#s2_phi = [-2.07, 1.3]
-#s2_psi = [[-np.pi, -2], [1.3, np.pi]]
-
-#phi_is_2 = np.asarray((phi[:, 1] >= s2_phi[0]) & (phi[:, 1] < s2_phi[1]))
-#psi_is_2 = np.asarray((psi[:, 1] >= s2_psi[0][0]) & (psi[:, 1] < s2_psi[0][1]))
-# psi_is_2_ = np.asarray((psi[:, 1] >= s2_psi[1][0]) & (psi[:, 1] < s2_psi[1][1]))  # , 1, psi_is_2)
-#idx_state2 = np.logical_and(phi_is_2, np.logical_or(psi_is_2, psi_is_2_))
-# set values for the state trajectory
-
+# %% 3:
+# define indices for state rectangles.
 s1_rec_ul = [[-np.pi, -2.07], [1.3, np.pi]]
 s1_rec_ur = [[1.3, np.pi], [1.3, np.pi]]
 s1_rec_ll = [[-np.pi, -2.07], [-np.pi, -2]]
 s1_rec_lr = [[1.3, np.pi], [-np.pi, -2]]
-rec_list = [s1_rec_ul, s1_rec_ur, s1_rec_ll, s1_rec_lr]
+rec_list_s1 = [s1_rec_ul, s1_rec_ur, s1_rec_ll, s1_rec_lr]
+idx_state1 = where_in_rec(phi, psi, rec_list_s1)
 
+s2_rec = [[-2.07, 1.3], [-np.pi, -2]]
+s2_rec_2 = [[-2.07, 1.3], [1.3, np.pi]]
+rec_list_s2 = [s2_rec, s2_rec_2]
+idx_state2 = where_in_rec(phi, psi, rec_list_s2)
 
-def where_in_rec(phi, psi, rec_list):
-    '''
-        calculates boolean array of indices where [phi, psi] are in a a rectangle.
+s3_rec = [[-np.pi, np.pi], [-2, 1.3]]
+rec_list_s3 = [s3_rec]
+idx_state3 = where_in_rec(phi, psi, rec_list_s3)
 
-        Parameters
-        ----------
-        phi: ndarray, shape(N,2)
-            array containing phi values in second column and time in first column
-        psi: ndarray, shape(N,2)
-            array containing psi values in second column and time in first column
-        rec_list: list
-            list of lists, which contain the indices, that define the rectangles
-            [[[phi_min1, phi_max1],[psi_min1, psi_max1]],[[phi_min2, phi_max2],[psi_min2, psi_max2]] ]
-
-        Returns
-        -------
-        idx_array: ndarray, shape(N,)
-            boolean array. True where [phi[i,1], psi[i,1]] is in any of the
-            rectangles, specified in rec_list
-    '''
-    phi_in_rec_list = []
-    psi_in_rec_list = []
-    both_in_rec_list = []
-    for rec in rec_list:
-        phi_in_rec = np.asarray((phi[:, 1] >= rec[0][0]) & (phi[:, 1] < rec[0][1]))
-        psi_in_rec = np.asarray((psi[:, 1] >= rec[1][0]) & (psi[:, 1] < rec[1][1]))
-        phi_in_rec_list.append(phi_in_rec)
-        psi_in_rec_list.append(psi_in_rec)
-        both_in_rec_list.append(np.logical_and(phi_in_rec, psi_in_rec))
-    idx_state1 = np.logical_or.reduce(np.array(both_in_rec_list))
-
-
-s = np.zer s(psi.shape)
+# create state trajectory (states vs.)
+s = np.zeros(psi.shape)
+# set first axis to time
 s[:, 0] = psi[:, 0]
-
-s[idx_state2, 1] = 2
-np.all(s[idx_state3, 1] == 0)
-s[idx_state3, 1] = 3
-idx_state1 = np.asarray(s[:, 1] == 0)
+# fill up entries of second column with corresponding states at the time
 s[idx_state1, 1] = 1
-np.all(s[:, 1] != 0)
+s[idx_state2, 1] = 2
+s[idx_state3, 1] = 3
 
-plt.scatter(phi[idx_state1, 1], psi[idx_state1, 1], label='State 1')
-plt.scatter(phi[idx_state2, 1], psi[idx_state2, 1], label='State 2')
-plt.scatter(phi[idx_state3, 1], psi[idx_state3, 1], label='State 3')
-plt.legend()
-plt.xlabel('Phi [rad]')
-plt.ylabel('Psi [rad]')
+# plot together the occupation probability with the chose rectangles, as well
+# as the phi/psi eig_values
+fig, ax1, ax2 = ramachandran_plot(phi, psi, xy_idx=[0.1, 0.9])
+
+for rec in rec_list_s1:
+    add_rec_patch(ax1, rec, color='g')
+for rec in rec_list_s2:
+    add_rec_patch(ax1, rec, color='c')
+for rec in rec_list_s3:
+    add_rec_patch(ax1, rec, color='m')
+
+ax2.clear()
+ax2.scatter(phi[idx_state2, 1], psi[idx_state2, 1], label='State 2')
+ax2.scatter(phi[idx_state3, 1], psi[idx_state3, 1], label='State 3')
+ax2.scatter(phi[idx_state1, 1], psi[idx_state1, 1], label='State 1')
+ax2.legend()
+ax2.set_xlabel('Phi [rad]')
+ax2.set_ylabel('Psi [rad]')
+
 plt.show()
+
 # %% calculate transition matrix
 
 
