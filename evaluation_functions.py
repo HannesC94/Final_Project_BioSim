@@ -98,17 +98,3 @@ def ramachandran_plot(phi, psi, xy_idx=[0.5, 0.5], figsize=[12, 5], bins=100):
     # plt.tight_layout()
     # plt.show()
     return fig, ax1, ax2
-
-
-# def make_plot():
-#    fig, ax = plt.subplots()
-#    ax.plot(np.arange(10), np.arange(10))
-#    return fig, ax
-#
-#
-#f, a = make_plot()
-# a.set_xlabel('asd')
-# plt.show()
-#
-#add_rec_patch(ax, [[2, 4], [3, 4]])
-#np.array([[2, 4], [3, 4]])[1, 0]
