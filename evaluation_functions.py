@@ -3,14 +3,16 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 
-def add_rec_patch(ax, idx_rec, color='r'):
+def add_rec_patch(ax, idx_rec, dwidth=0, **kwargs):
 
     idx_rec_np = np.array(idx_rec)
     ll = (idx_rec_np[0, 0], idx_rec_np[1, 0])
     width = idx_rec_np[0, 1] - idx_rec_np[0, 0]
     height = idx_rec_np[1, 1] - idx_rec_np[1, 0]
-    rect = patches.Rectangle(ll, width, height, linewidth=1,
-                             edgecolor=color, facecolor='none')
+    width = width - dwidth
+    height = height - dwidth
+    rect = patches.Rectangle(ll, width, height,
+                             facecolor='none', **kwargs)
     ax.add_patch(rect)
 
 
@@ -98,3 +100,108 @@ def ramachandran_plot(phi, psi, xy_idx=[0.5, 0.5], figsize=[12, 5], bins=100):
     # plt.tight_layout()
     # plt.show()
     return fig, ax1, ax2
+
+
+def T_of_tau(s, n_tau, K):
+    '''
+        calculates the transition matrix T(tau) of a state trajectory s(t) with a time lag of tau = n_tau*dt
+
+        Parameters
+        ----------
+        s: ndarray, shape(N,2)
+            state vs time trajectory. Occupied state in second column
+        n_tau: int
+            integer between 1 and N. corresponds to a time lag of tau=n_tau*dt, where dt is the time step in the state trajectory
+        K: integer
+            dimension of (quadratic) matrix T(tau). Corresponds to number of different states in s
+    '''
+    N_ij = np.zeros((K, K))
+    for i in np.arange(K)+1:
+        delta_si = np.array(s[:, 1] == i).astype(int)
+        for j in np.arange(K)+1:
+            delta_sj = np.array(s[:, 1] == j).astype(int)
+            N_ij[i-1, j-1] = delta_si[:-n_tau].dot(delta_sj[n_tau:])
+    # normalize N_ij
+    T_ij = N_ij/np.sum(N_ij, axis=1)[:, np.newaxis]
+    return T_ij
+
+
+def get_lambda2(A):
+    """
+    Calculates the left eigenectors and eigenvalues of A. Returns the second laargest eigenvalue.
+    """
+    eig_values, eig_vectors = np.linalg.eig(A.T)
+    # numpy sort returns sorted values in increasing order
+    lambda2 = np.sort(eig_values)[-2]
+    return lambda2
+
+
+def calc_timp(tau_range, s, K):
+    '''
+        calculates the evolution of the implicit time scale with respect to differentlag times.
+
+        Parameters
+        ----------
+        tau_range: list/array_like
+            list of integers n_tau, corresponding to lag time n_tau*dt
+        s: ndarray, shape(N,2)
+            state trajectory
+        K: int
+            number of different states in s
+
+        Returns
+        -------
+        timp: ndarray
+            array with calculated implicit time scales. Same shape as tau_range
+    '''
+    timp = np.empty(len(tau_range))
+    for i, tau in enumerate(tau_range):
+        T_tau = T_of_tau(s, tau, K)
+        lambda2 = get_lambda2(T_tau)
+        timp[i] = - tau/np.log(lambda2)
+    return timp
+
+
+def shrink_rec(rec, ds):
+    '''
+        shrink a rectangle by ds on every side.
+        Parameters
+        ----------
+        rec: list
+            if rec is a list of lists, containing the indices, every rectangle is
+            made smaller by the same amount.
+        ds: float
+            ds is subtracted from the upper boundaries and substracted from the
+            lower boundaries of the rectangle(s)
+
+        Return
+        ------
+        rec: list, same shape as input rec
+            contains the new indices for the smaller rectangles
+    '''
+    rec = np.array(rec)
+    if len(rec.shape) == 2:
+        rec[:, 0] += ds
+        rec[:, 1] -= ds
+    elif len(rec.shape) == 3:
+        rec[:, :, 0] += ds
+        rec[:, :, 1] -= ds
+    return rec.tolist()
+
+
+def make_state_traj(phi, psi, state_dict, core_def=True):
+    # create state trajectory (states vs. time)
+    s = np.zeros(psi.shape)
+    # set first axis to time
+    s[:, 0] = psi[:, 0]
+    for i, state in enumerate(state_dict.keys()):
+        rec_list = state_dict[state]
+        idx_state = where_in_rec(phi, psi, rec_list)
+        s[idx_state, 1] = i+1
+    if core_def:
+        for i in range(len(s)):
+            if s[i, 1] == 0:
+                s[i, 1] = s[i-1, 1]
+            else:
+                continue
+    return s
