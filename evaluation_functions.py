@@ -139,7 +139,7 @@ def get_lambda2(A):
 def calc_timp(tau_range, s, K):
     '''
         calculates the evolution of the implicit time scale with respect to differentlag times.
-
+        The
         Parameters
         ----------
         tau_range: list/array_like
@@ -151,8 +151,9 @@ def calc_timp(tau_range, s, K):
 
         Returns
         -------
-        timp: ndarray
-            array with calculated implicit time scales. Same shape as tau_range
+        timp: ndarray, shape(tau_range.shape())
+            array with calculated implicit time scales. To get the time, one needs
+            to multiply by the time step from the state trajectory.
     '''
     timp = np.empty(len(tau_range))
     for i, tau in enumerate(tau_range):
