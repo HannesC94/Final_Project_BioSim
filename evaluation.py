@@ -105,9 +105,10 @@ n_2_list = n_2_list[1:]
 idx_n_3 = np.mod(s_n[:, 0], 200) == 0
 n_3_list = (s_n[idx_n_3, 0]/5).astype(int)
 n_3_list = n_3_list[1:]
-idx_n_t = np.logical_or.reduce((idx_n_1, idx_n_2, idx_n_3))
+idx_n_t = np.logical_or.reduce([idx_n_1, idx_n_2, idx_n_3])
 n_t_list = s_n[idx_n_t, 0].astype(int)
 n_t_list = n_t_list[1:]
+
 
 # list of transition matrices for all relevant times n_t*dt
 T_nt_list = np.zeros((len(n_t_list), K, K))
@@ -123,20 +124,24 @@ for i, n_1 in enumerate(n_1_list):
 n_1_data = [n_1_list, T_n1_list]
 
 T_n2_list = np.zeros((len(n_2_list), K, K))
-for i, n_2 in enumerate(n_2_list[1:]):
-    T_n2_list[i] = T_of_tau(s, n_tau=n_2, K=K)
-n_2_data = [n_2_list, T_n2_list]
+for i, n_2 in enumerate(n_2_list):
+    T_n2_list[i] = np.linalg.matrix_power(T_tau_list[1], n_2)
+    n_2_data = [n_2_list, T_n2_list]
 
 T_n3_list = np.zeros((len(n_3_list), K, K))
-for i, n_3 in enumerate(n_3_list[1:]):
-    T_n3_list[i] = T_of_tau(s, n_tau=n_3, K=K)
-n_3_data = [n_3_list, T_n3_list]
+for i, n_3 in enumerate(n_3_list):
+    T_n3_list[i] = np.linalg.matrix_power(T_tau_list[2], n_3)
+    n_3_data = [n_3_list, T_n3_list]
 # %% plot
 ################################################################################
 fig, ax = plt.subplots()
 st = 1
 ax.plot(np.log10(n_t_data[0]), n_t_data[1][:, st-1, st-1], marker='o', ls='')
-ax.plot(np.log10(n_1_data[0]), n_1_data[1][:, st-1, st-1], label='n_tau:{}'.format(n_tau_list[0]))
-ax.plot(np.log10(n_2_data[0]), n_2_data[1][:, st-1, st-1], label='n_tau:{}'.format(n_tau_list[1]))
-ax.plot(np.log10(n_3_data[0]), n_3_data[1][:, st-1, st-1], label='n_tau:{}'.format(n_tau_list[2]))
+ax.plot(np.log10(n_1_data[0]*5), n_1_data[1][:, st-1, st-1], label='n_tau:{}'.format(n_tau_list[0]))
+ax.plot(np.log10(n_2_data[0]*50), n_2_data[1][:, st-1, st-1],
+        label='n_tau:{}'.format(n_tau_list[1]))
+ax.plot(np.log10(n_3_data[0]*200), n_3_data[1][:, st-1, st-1],
+        label='n_tau:{}'.format(n_tau_list[2]))
 ax.legend()
+ax.set_ylim(0.23, 0.27)
+plt.show()

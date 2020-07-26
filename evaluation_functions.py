@@ -206,3 +206,45 @@ def make_state_traj(phi, psi, state_dict, core_def=True):
             else:
                 continue
     return s
+
+
+def func(n_tau_list, s, K):
+    '''
+        Takes a list of lag times (in form of integer multiples of dt) and
+        determines all mulitples, m, of that lag time, which are still in the time
+        range of the state trajectory s. Then a set of transition matrices, of these
+        lag times is calculated and risen to the power of all m's, that are specific
+        to that lag time.
+
+        Parameters
+        ----------
+
+        Return
+        ------
+        tau_data: dictionary
+            For all entries in n_tau_list there is an entry in tau_data. For every
+            lag time tau_data contains a list with two entries.
+            tau_data[0]: list of m*n_tau for all different powers m of n_tau
+            tau_data[1]: ndarray, transition matrices T(n_tau)**m to the power of m
+    '''
+    nun_tau_powers = len(n_tau_list)
+    s_n = np.copy(s)
+    s_n[:, 0] = s_n[:, 0]/np.mean(np.diff(s_1[:, 0]))
+    T_tau_list = [T_of_tau(s, tau, K) for tau in n_tau_list]
+
+    tau_data = {str(tau): [] for tau in n_tau_list}
+    n_t_idx = ()
+    for i, n_tau in enumerate(n_tau_list):
+        tau_fold_idx = np.mod(s_n[:, 0], n_tau) == 0
+        n_t_idx.append(tau_fold_idx)
+        n_tau_powers = (s_n[tau_fold_idx, 0]/n_tau).astype(int)
+        # remove first entry, because it corresponds to n_t=0
+        n_tau_powers = n_tau_powers[1:]
+        T_to_m = np.zeros((len(n_tau_powers), K, K))
+        T_n_tau = T_tau_list[i]
+        for i, m in enumerate(n_tau_powers):
+            T_to_m[i] = np.linalg.matrix_power(T_n_tau, m)
+        # NOTE: multiply n_tau_powers with ntau to get the right times for the plot in the end
+        tau_data[str(n_tau)] = [n_tau_powers*n_tau, T_to_m]
+
+    idx_n_t = np.logical_xor.reduce((n_t_idx))
