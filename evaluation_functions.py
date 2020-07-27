@@ -208,7 +208,7 @@ def make_state_traj(phi, psi, state_dict, core_def=True):
     return s
 
 
-def func(n_tau_list, s, K):
+def calc_MSM_validation_data(n_tau_list, s, K):
     '''
         Takes a list of lag times (in form of integer multiples of dt) and
         determines all mulitples, m, of that lag time, which are still in the time
@@ -221,19 +221,22 @@ def func(n_tau_list, s, K):
 
         Return
         ------
+        ref_data: list
+            ref_data[0]: integer values n_t which corerspond to lag times tau_t
+            ref_data[1]: transition matrices T(tau_t)=T(n_t*dt)
         tau_data: dictionary
             For all entries in n_tau_list there is an entry in tau_data. For every
             lag time tau_data contains a list with two entries.
             tau_data[0]: list of m*n_tau for all different powers m of n_tau
             tau_data[1]: ndarray, transition matrices T(n_tau)**m to the power of m
     '''
-    nun_tau_powers = len(n_tau_list)
+    num_tau_powers = len(n_tau_list)
     s_n = np.copy(s)
-    s_n[:, 0] = s_n[:, 0]/np.mean(np.diff(s_1[:, 0]))
+    s_n[:, 0] = s_n[:, 0]/np.mean(np.diff(s[:, 0]))
     T_tau_list = [T_of_tau(s, tau, K) for tau in n_tau_list]
 
     tau_data = {str(tau): [] for tau in n_tau_list}
-    n_t_idx = ()
+    n_t_idx = []
     for i, n_tau in enumerate(n_tau_list):
         tau_fold_idx = np.mod(s_n[:, 0], n_tau) == 0
         n_t_idx.append(tau_fold_idx)
@@ -245,6 +248,33 @@ def func(n_tau_list, s, K):
         for i, m in enumerate(n_tau_powers):
             T_to_m[i] = np.linalg.matrix_power(T_n_tau, m)
         # NOTE: multiply n_tau_powers with ntau to get the right times for the plot in the end
-        tau_data[str(n_tau)] = [n_tau_powers*n_tau, T_to_m]
+        tau_data[str(n_tau)] = [n_tau_powers*n_tau, np.copy(T_to_m)]
 
-    idx_n_t = np.logical_xor.reduce((n_t_idx))
+    idx_n_t = np.logical_or.reduce((n_t_idx))
+    n_t_list = (s_n[idx_n_t, 0]).astype(int)
+    n_t_list = np.delete(n_t_list, n_t_list == 0)
+    T_n_t = np.zeros((len(n_t_list), K, K))
+    for i, n_t in enumerate(n_t_list):
+        T_n_t[i] = T_of_tau(s, n_t, K)
+    ref_data = [n_t_list, T_n_t]
+
+    return [ref_data, tau_data]
+
+
+def MSM_validation_plot(tau_data, ref_data, states, params=None, **kwargs):
+    '''
+        Parameters
+    '''
+
+    fig, axes = plt.subplots(len(states), 1, subplot_kw=params, **kwargs)
+    for id, ax in enumerate(axes.flatten()):
+        state = states[id]  # axes has same length as state
+        ax.scatter(ref_data[0], ref_data[1][:, state-1, state-1], label='MD data')
+        for n_tau in tau_data.keys():
+            n_m_dt, T_to_m = tau_data[n_tau]
+            ax.plot(n_m_dt, T_to_m[:, state-1, state-1], label='T^m('+n_tau+')')
+
+        # ax.set_xscale(xscale)
+        ax.set_title('State {}'.format(state))
+    plt.legend()
+    return fig, axes

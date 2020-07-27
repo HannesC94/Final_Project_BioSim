@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from evaluation_functions import *
 
-################################################################################
 # %% read in data and prepare for further analysis
+################################################################################
 path_phi = 'simulation_data/ad_angle_PHI.xvg'
 path_psi = 'simulation_data/ad_angle_PSI.xvg'
 # read in the files for psi and phi
@@ -35,7 +35,6 @@ rect_dict_2['state1']
 s_1 = make_state_traj(phi, psi, rect_dict_1, core_def=False)
 s_2 = make_state_traj(phi, psi, rect_dict_2, core_def=True)
 s_3 = make_state_traj(phi, psi, rect_dict_3, core_def=True)
-
 
 # ## %% 3:
 # ################################################################################
@@ -86,6 +85,11 @@ for state in rect_dict_2.keys():
 ax.plot(np.linspace(-np.pi, np.pi, 100), np.linspace(-np.pi, np.pi, 100))
 plt.show()
 
+# %% testcell MSM evaluation
+################################################################################
+n_tau_list = [5, 50, 200]
+K = 3
+ref_data, tau_data = func(n_tau_list, s_1, K)
 # %% Validation of MSM model
 ################################################################################
 s = np.copy(s_1)
@@ -114,7 +118,7 @@ n_t_list = n_t_list[1:]
 T_nt_list = np.zeros((len(n_t_list), K, K))
 for i, n_t in enumerate(n_t_list):
     T_nt_list[i] = T_of_tau(s, n_tau=n_t, K=K)
-n_t_data = [n_t_list, T_n1_list]
+n_t_data = [n_t_list, T_nt_list]
 n_t_data[0].shape
 
 # generate list of mfolded matrices, defined in T_tau_list
@@ -145,3 +149,16 @@ ax.plot(np.log10(n_3_data[0]*200), n_3_data[1][:, st-1, st-1],
 ax.legend()
 ax.set_ylim(0.23, 0.27)
 plt.show()
+
+a = np.array([1, 0, 0])
+b = np.array([1, 1, 0])
+c = np.array([1, 1, 0])
+xor = np.logical_xor.reduce([a, b, c])
+np.where(a == 0, a, 'ups')
+np.delete(a, a == 0)
+xor
+a = np.ones(2)
+b = [1, a]
+b[1]
+a -= 1
+b
