@@ -1,0 +1,40 @@
+title               =  AlanineDipeptide
+constraints         =  h-bonds
+integrator          =  md
+cutoff-scheme       =  verlet
+
+constraint-algorithm = SHAKE
+dt                  =  0.002 
+nsteps              =  2500000      	  	; set the number to achieve at least 5ns
+nstcomm             =  25			; frequency for center of mass motion removal
+nstcalcenergy       =  25
+nstxout             =  250000		; frequency for writting the positions to .trr 
+nstvout             =  1000000		; frequency for writting the velocity
+nstfout             =  1000000		; frequency to write forces to output trajectory
+nstlog              =  100000		; frequency to write the log file
+nstenergy           =  1000			; frequency to write energies to energy file
+nstxtcout           =  100 			; every 0.2 ps
+
+xtc-grps            =  Protein
+
+nstlist             =  10			; Frequency to update the neighbor list
+ns_type             =  grid			; Make a grid in the box and only check atoms in neighboring grid cells when constructing a new neighbor 
+rlist               =  1.2			; cut-off distance for the short-range neighbor list
+
+coulombtype         =  PME			; Fast Particle-Mesh Ewald electrostatics
+rcoulomb            =  0.9			; cut-off distance for the coulomb field
+vdwtype             =  Cut-off
+rvdw                =  0.9			; cut-off distance for the vdw field
+fourierspacing      =  0.12			; The maximum grid spacing for the FFT grid
+pme_order           =  6			; Interpolation order for PME
+optimize_fft        =  yes
+pbc		            =  xyz
+
+Tcoupl              =  v-rescale
+tc-grps             =  System
+tau_t               =  0.1 
+ref_t               =  300
+
+pcoupl              =  no
+
+gen_vel             =  no

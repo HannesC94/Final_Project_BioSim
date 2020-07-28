@@ -1,0 +1,6 @@
+gmx pdb2gmx -f ad.pdb -o ad.gro -p ad.top
+gmx editconf -bt cubic -f ad.gro -c -princ -d 0.6 -o ad_box.gro
+gmx solvate -cp ad_box.gro -cs -o ad_box_water.gro -p ad.top
+gmx grompp -f SD.mdp -c ad_box_water.gro -p ad.top -o ad_water_SDmin.tpr
+gmx mdrun -v -deffnm ad_water_SDmin
+gmx angle -f ad_water_MD.xtc -n dihedral_idx.ndx -type dihedral -ov ad_angle_PHI.xvg

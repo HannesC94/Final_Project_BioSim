@@ -1,0 +1,14 @@
+integrator = steep
+emstep = 0.01
+nsteps = 10000
+
+pbc = xyz
+rlist = 0.9
+
+coulombtype = cut-off
+rcoulomb = 0.9
+
+cutoff-scheme = Verlet
+vdwtype = cut-off
+rvdw = 0.9
+
