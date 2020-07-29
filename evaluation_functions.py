@@ -4,13 +4,24 @@ import matplotlib.patches as patches
 
 
 def add_rec_patch(ax, idx_rec, dwidth=0, **kwargs):
+    '''
+        add a rectangle to an existing axis object
+
+        Parameters
+        ----------
+        ax: matplotlib.axes
+            axes to which the rectangle is added
+        idx_rec: list, [[phi_min, phi_max], [psi_min, psi_max]]
+            contains the indices, which specify the rectangle
+        dwidth: float
+            shrink the rectangle on all sides to identify two rectangles
+            next to each other better
+    '''
 
     idx_rec_np = np.array(idx_rec)
-    ll = (idx_rec_np[0, 0], idx_rec_np[1, 0])
-    width = idx_rec_np[0, 1] - idx_rec_np[0, 0]
-    height = idx_rec_np[1, 1] - idx_rec_np[1, 0]
-    width = width - dwidth
-    height = height - dwidth
+    ll = (idx_rec_np[0, 0]+dwidth, idx_rec_np[1, 0]+dwidth)
+    width = (idx_rec_np[0, 1] - idx_rec_np[0, 0])-2*dwidth
+    height = (idx_rec_np[1, 1] - idx_rec_np[1, 0])-2*dwidth
     rect = patches.Rectangle(ll, width, height,
                              facecolor='none', **kwargs)
     ax.add_patch(rect)
@@ -18,7 +29,7 @@ def add_rec_patch(ax, idx_rec, dwidth=0, **kwargs):
 
 def where_in_rec(phi, psi, rec_list):
     '''
-        calculates boolean array of indices where [phi, psi] are in a a rectangle.
+        calculates boolean. True, if [phi, psi] are in a a rectangle.
 
         Parameters
         ----------
@@ -191,6 +202,24 @@ def shrink_rec(rec, ds):
 
 
 def make_state_traj(phi, psi, state_dict, core_def=True):
+    '''
+        Create a state trajectory s(t) based on Phi and Psi angles. For every state there is a list with indices, specified in state_dict. The indices specify the corner of the rectangles which have been assigned to the state. s(t) will have the state value, that corresponds to the rectangle in which (phi(t), psi(t)) lies.
+
+        Parameters
+        ----------
+        phi/psi: ndarray, shape(N,2)
+            angles over time
+        state_dict: dictionary
+            keys: different states
+            values: nested lists, containing indices, that specify rectangles, which are assigned to the state
+        core_def: bool
+            if True: checks the state trajectory for  entries without state assignement and assigns them to the previously visited state
+
+        Return
+        ------
+        s: ndarray, shape(N,2)
+            state trajectory, contains time in first dimension and one of the states in the second dimension
+    '''
     # create state trajectory (states vs. time)
     s = np.zeros(psi.shape)
     # set first axis to time
@@ -211,7 +240,7 @@ def make_state_traj(phi, psi, state_dict, core_def=True):
 def calc_MSM_validation_data(n_tau_list, s, K):
     '''
         Takes a list of lag times (in form of integer multiples of dt) and
-        determines all mulitples, m, of that lag time, which are still in the time
+        determines all mulitples, m, of that lag times, which are still in the time
         range of the state trajectory s. Then a set of transition matrices, of these
         lag times is calculated and risen to the power of all m's, that are specific
         to that lag time.
@@ -222,7 +251,7 @@ def calc_MSM_validation_data(n_tau_list, s, K):
         Return
         ------
         ref_data: list
-            ref_data[0]: integer values n_t which corerspond to lag times tau_t
+            ref_data[0]: integer values n_t which corresponds to lag times tau_t
             ref_data[1]: transition matrices T(tau_t)=T(n_t*dt)
         tau_data: dictionary
             For all entries in n_tau_list there is an entry in tau_data. For every
@@ -232,17 +261,20 @@ def calc_MSM_validation_data(n_tau_list, s, K):
     '''
     num_tau_powers = len(n_tau_list)
     s_n = np.copy(s)
+    # change the time values of s to integer multiples of dt
     s_n[:, 0] = s_n[:, 0]/np.mean(np.diff(s[:, 0]))
     T_tau_list = [T_of_tau(s, tau, K) for tau in n_tau_list]
 
     tau_data = {str(tau): [] for tau in n_tau_list}
     n_t_idx = []
     for i, n_tau in enumerate(n_tau_list):
-        tau_fold_idx = np.mod(s_n[:, 0], n_tau) == 0
+        # generate boolean array at which time steps (n_t) n_t is a multiple of
+        # the lag time n_tau
+        tau_fold_idx = (np.mod(s_n[:, 0], n_tau) == 0)
         n_t_idx.append(tau_fold_idx)
         n_tau_powers = (s_n[tau_fold_idx, 0]/n_tau).astype(int)
         # remove first entry, because it corresponds to n_t=0
-        n_tau_powers = n_tau_powers[1:]
+        n_tau_powers = n_tau_powers[n_tau_powers != 0]
         T_to_m = np.zeros((len(n_tau_powers), K, K))
         T_n_tau = T_tau_list[i]
         for i, m in enumerate(n_tau_powers):
@@ -252,17 +284,19 @@ def calc_MSM_validation_data(n_tau_list, s, K):
 
     idx_n_t = np.logical_or.reduce((n_t_idx))
     n_t_list = (s_n[idx_n_t, 0]).astype(int)
-    n_t_list = np.delete(n_t_list, n_t_list == 0)
+    n_t_list = n_t_list[n_t_list != 0]
     T_n_t = np.zeros((len(n_t_list), K, K))
     for i, n_t in enumerate(n_t_list):
         T_n_t[i] = T_of_tau(s, n_t, K)
     ref_data = [n_t_list, T_n_t]
 
-    return [ref_data, tau_data]
+    return [idx_n_t, ref_data, tau_data]
 
 
 def MSM_validation_plot(tau_data, ref_data, states, params=None, **kwargs):
     '''
+
+
         Parameters
     '''
 
@@ -278,3 +312,36 @@ def MSM_validation_plot(tau_data, ref_data, states, params=None, **kwargs):
         ax.set_title('State {}'.format(state))
     plt.legend()
     return fig, axes
+
+
+def visualize_states(rect_dict, phi, psi, color_list):
+    '''
+        Creates a Ramachandran plot and adds rectangles to it with an indicator which state the rectangles belong to.
+
+        Parameters
+        ----------
+        rect_dict: dictionary
+            contains the indices, defining the rectangles, the states are assigned to
+        phi/psi: ndarray, shape(N,2)
+            angles for the ramachandran plot
+        color_list: list
+            list of edgecolors for the rectagles, same number of entries as there are differen states
+    '''
+    colors = dict()
+    for i, key in enumerate(rect_dict.keys()):
+        colors[key] = color_list[i]
+
+    fig, ax = plt.subplots()
+    ax.set_xlabel(r'$\Phi$ [rad]', size=12)
+    ax.set_ylabel(r'$\Psi$ [rad]', size=12)
+    ax.set_title(r'Definition of State regions')
+    hist = ax.hist2d(phi[:, 1], psi[:, 1], bins=100, density=True)
+    for state in rect_dict.keys():
+        state_recs = rect_dict[state]
+        c = colors[state]
+        for rec in state_recs:
+            add_rec_patch(ax, rec, dwidth=0.02, edgecolor=c, lw=3)
+    plt.text(2, 2, 'St1', color=colors['state1'], size=18)
+    plt.text(-0.5, 2, 'St2', color=colors['state2'], size=18)
+    plt.text(1, -.5, 'St3', color=colors['state3'], size=18)
+    plt.show()
