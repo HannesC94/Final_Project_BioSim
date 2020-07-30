@@ -64,9 +64,7 @@ rec_list_s2 = [s2_rec_u, s2_rec_l]
 s3_rec = [[-np.pi, np.pi], [-2, 1.3]]
 rec_list_s3 = [s3_rec]
 
-# make dictionary and save a dictionary. with rect_dict['statei'] you get a list
-# which contains m lists with the phi and psi values, defining the rectangle. m
-# is the number of rectangles, to which the state has been assigned.
+# make dictionary where rect_dict['statei'] gives a list of the corresponding rectangles
 rect_dict_1 = {
     'state1': rec_list_s1,
     'state2': rec_list_s2,

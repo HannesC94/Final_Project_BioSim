@@ -44,18 +44,10 @@ s_3 = make_state_traj(phi, psi, rect_dict_3_core, core_def=True)
 
 # %% plot s_2
 ################################################################################
-tau_range = np.arange(1, 200, 5)
-dt = 0.2  # ps
-timp_1 = calc_timp(tau_range, s_1, 3)
-timp_2 = calc_timp(tau_range, s_2, 3)
-timp_3 = calc_timp(tau_range, s_3, 3)
+tau_range_1 = np.arange(1, 200, 5)
+tau_range_2 = np.arange(1, 900, 10)
+plot_timp(tau_range_1, tau_range_2, s_1)
 
-fig, ax1 = plt.subplots()
-ax1.plot(tau_range*dt, timp_1*dt, ls=':', marker='x', color='b')
-ax1.plot(tau_range*dt, timp_2*dt, ls=':', marker='x', color='r')
-ax1.plot(tau_range*dt, timp_3*dt, ls=':', marker='x', color='g')
-ax1.set_xlabel(r'$\tau$ [ps]')
-ax1.set_ylabel(r'$t_{impl}$ [ps]')
 
 # %% plot rectangles
 ################################################################################
@@ -74,9 +66,9 @@ plt.show()
 
 # %% testcell MSM evaluation
 ################################################################################
-n_tau_list = [5, 50, 200]
+n_tau_list = [5, 50, 400]
 params = {'xscale': 'log',
-          'xlim': (5, 5e3),
+          'xlim': (5, 1e3),
           'xlabel': 't [ps]/dt'
           }
 

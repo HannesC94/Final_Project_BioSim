@@ -174,6 +174,31 @@ def calc_timp(tau_range, s, K):
     return timp
 
 
+def add_timp_plot(ax, tau_range, s, K=3,  **kwargs):
+    '''
+        add a plot of the implicit time scale to an axes
+    '''
+    dt = np.mean(np.diff(s[:, 0]))
+    t_imp = calc_timp(tau_range, s, K)
+    ax.plot(tau_range*dt, t_imp*dt, **kwargs)
+    ax.set_xlabel(r'$\tau$ [ps]')
+    ax.set_ylabel(r'$t_{impl}$ [ps]')
+
+
+def plot_timp(tau_range_1, tau_range_2, s, **kwargs):
+    dt = np.mean(np.diff(s[:, 0]))
+    fig, [ax1, ax2] = plt.subplots(1, 2, **kwargs)
+    add_timp_plot(ax1, tau_range_2, s, ls='-')
+    ax1.axvspan(xmin=tau_range_1[0]*dt, xmax=tau_range_1[-1]
+                * dt, color='y', label='region of interest')
+    ax1.legend(fontsize=15)
+    add_timp_plot(ax2, tau_range_1, s, ls=':', marker='x')
+    ax2.axvline(x=20)
+    ax2.axhline(y=48)
+    fig.suptitle(r'Implicit time scale as a function of the lag time $\tau$', fontsize=15)
+    plt.show()
+
+
 def shrink_rec(rec, ds):
     '''
         shrink a rectangle by ds on every side.
