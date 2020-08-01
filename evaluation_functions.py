@@ -99,7 +99,7 @@ def ramachandran_plot(phi, psi, xy_idx=[0.5, 0.5], figsize=[12, 5], bins=100):
     ax1.vlines(x=phi_c, ymin=-np.pi, ymax=np.pi, color='r')
     ax1.set_xlabel('Phi [rad]')
     ax1.set_ylabel('Psi [rad]')
-    #add_rec_patch(ax1, [[-np.pi, np.pi], [-2, 1.3]])
+    # add_rec_patch(ax1, [[-np.pi, np.pi], [-2, 1.3]])
     ax2.plot(phi_edges[:-1], h[:, psi_idx], label='Psi:{:.3f}'.format(psi_c))
     ax2.plot(psi_edges[:-1], h[phi_idx, :], label='Phi:{:.3f}'.format(phi_c), color='r')
     ax2.set_ylim(0, np.max(h))
@@ -139,7 +139,7 @@ def T_of_tau(s, n_tau, K):
 
 def get_lambda2(A):
     """
-    Calculates the left eigenectors and eigenvalues of A. Returns the second laargest eigenvalue.
+    Calculates the left eigenectors and eigenvalues of A. Returns the second largest eigenvalue.
     """
     eig_values, eig_vectors = np.linalg.eig(A.T)
     # numpy sort returns sorted values in increasing order
@@ -177,6 +177,15 @@ def calc_timp(tau_range, s, K):
 def add_timp_plot(ax, tau_range, s, K=3,  **kwargs):
     '''
         add a plot of the implicit time scale to an axes
+
+        Parameters
+        ----------
+        tau_range: list/array_like
+            list of integers n_tau, corresponding to lag time n_tau*dt
+        s: ndarray, shape(N,2)
+            state trajectory
+        K: int
+            number of different states in s
     '''
     dt = np.mean(np.diff(s[:, 0]))
     t_imp = calc_timp(tau_range, s, K)
@@ -185,7 +194,18 @@ def add_timp_plot(ax, tau_range, s, K=3,  **kwargs):
     ax.set_ylabel(r'$t_{impl}$ [ps]')
 
 
-def plot_timp(tau_range_1, tau_range_2, s, **kwargs):
+def plot_timp(tau_range_1, tau_range_2, s, axh_y=None, axv_x=None,  **kwargs):
+    '''
+        Plot implicit time scale, given a state trajectory s for two ranges of lag times.
+
+        Parameters
+        ----------
+        tau_range1/2: list/array_like
+            list of integers n_tau, corresponding to lag time n_tau*dt
+        s: ndarray, shape(N,2)
+            state trajectory
+
+    '''
     dt = np.mean(np.diff(s[:, 0]))
     fig, [ax1, ax2] = plt.subplots(1, 2, **kwargs)
     add_timp_plot(ax1, tau_range_2, s, ls='-')
@@ -193,9 +213,30 @@ def plot_timp(tau_range_1, tau_range_2, s, **kwargs):
                 * dt, color='y', label='region of interest')
     ax1.legend(fontsize=15)
     add_timp_plot(ax2, tau_range_1, s, ls=':', marker='x')
-    ax2.axvline(x=20)
+    ax2.axvline(x=axv_x)
     ax2.axhline(y=48)
     fig.suptitle(r'Implicit time scale as a function of the lag time $\tau$', fontsize=15)
+    plt.show()
+
+
+def compare_timp(tau_range, state_trajs, **kwargs):
+    '''
+        Plot implicit time scales as a function of the lag time for different state trajectories.
+
+        Parameters
+        ----------
+        tau_range: list/array_like
+            list of integers n_tau, corresponding to lag time n_tau*dt
+        state_trajs: ndarray, shape(N,2)
+            state trajectories
+
+    '''
+
+    fig, ax = plt.subplots()
+    for i, s in enumerate(state_trajs):
+        add_timp_plot(ax, tau_range, s, label='State def {}'.format(i+1), **kwargs)
+    ax.legend()
+    fig.suptitle('Comparison of implied time scales\nfor different core definitions')
     plt.show()
 
 
@@ -262,6 +303,40 @@ def make_state_traj(phi, psi, state_dict, core_def=True):
     return s
 
 
+def visualize_states(rect_dict, phi, psi, color_list, ax=None):
+    '''
+    Creates a Ramachandran plot and adds rectangles to it with an indicator which state the rectangles belong to.
+
+    Parameters
+    ----------
+    rect_dict: dictionary
+    contains the indices, defining the rectangles, the states are assigned to
+    phi/psi: ndarray, shape(N,2)
+    angles for the ramachandran plot
+    color_list: list
+    list of edgecolors for the rectagles, same number of entries as there are differen states
+    '''
+    colors = dict()
+    for i, key in enumerate(rect_dict.keys()):
+        colors[key] = color_list[i]
+    if ax == None:
+        fig, ax = plt.subplots()
+    ax.set_xlabel(r'$\Phi$ [rad]', size=12)
+    ax.set_ylabel(r'$\Psi$ [rad]', size=12)
+    ax.set_title(r'Definition of State regions')
+    hist = ax.hist2d(phi[:, 1], psi[:, 1], bins=100, density=True)
+    for state in rect_dict.keys():
+        state_recs = rect_dict[state]
+        c = colors[state]
+        for rec in state_recs:
+            add_rec_patch(ax, rec, dwidth=0.02, edgecolor=c, lw=3)
+    ax.text(2, 2, 'st1', color=colors['state1'], size=18)
+    ax.text(-0.5, 2, 'st2', color=colors['state2'], size=18)
+    ax.text(1, -.5, 'st3', color=colors['state3'], size=18)
+    if ax == None:
+        plt.show()
+
+
 def calc_MSM_validation_data(n_tau_list, s, K):
     '''
         Takes a list of lag times (in form of integer multiples of dt) and
@@ -315,58 +390,86 @@ def calc_MSM_validation_data(n_tau_list, s, K):
         T_n_t[i] = T_of_tau(s, n_t, K)
     ref_data = [n_t_list, T_n_t]
 
-    return [idx_n_t, ref_data, tau_data]
+    return [ref_data, tau_data]
 
 
-def MSM_validation_plot(tau_data, ref_data, states, params=None, **kwargs):
+def add_MSM_val(tau_data, ref_data, ax, transition, dt=0.2, **kwargs):
     '''
-
-
-        Parameters
-    '''
-
-    fig, axes = plt.subplots(len(states), 1, subplot_kw=params, **kwargs)
-    for id, ax in enumerate(axes.flatten()):
-        state = states[id]  # axes has same length as state
-        ax.scatter(ref_data[0], ref_data[1][:, state-1, state-1], label='MD data')
-        for n_tau in tau_data.keys():
-            n_m_dt, T_to_m = tau_data[n_tau]
-            ax.plot(n_m_dt, T_to_m[:, state-1, state-1], label='T^m('+n_tau+')')
-
-        # ax.set_xscale(xscale)
-        ax.set_title('State {}'.format(state))
-    plt.legend()
-    return fig, axes
-
-
-def visualize_states(rect_dict, phi, psi, color_list):
-    '''
-        Creates a Ramachandran plot and adds rectangles to it with an indicator which state the rectangles belong to.
+        Plot one of  elements of the transition matrices, calculated with calc_MSM_validation_data on an axis.
 
         Parameters
         ----------
-        rect_dict: dictionary
-            contains the indices, defining the rectangles, the states are assigned to
-        phi/psi: ndarray, shape(N,2)
-            angles for the ramachandran plot
-        color_list: list
-            list of edgecolors for the rectagles, same number of entries as there are differen states
+        ref_data: list
+            ref_data[0]: integer values n_t which corresponds to lag times tau_t
+            ref_data[1]: transition matrices T(tau_t)=T(n_t*dt)
+        tau_data: dictionary
+            tau_data[0]: list of m*n_tau for all different powers m of n_tau
+            tau_data[1]: ndarray, transition matrices T(n_tau)**m to the power of m
+        ax: axis object
+            ax t plot on
+        transition: tuple(i,j) or int
+            which entry (p_ij) from the transition matrices shall be taken an plotted against time
+            if int, the diagonal elemnt is taken
+        dt: float
+            time between frames in ps
+        NOTE: For more info, see calc_MSM_validation_data docstring.
     '''
-    colors = dict()
-    for i, key in enumerate(rect_dict.keys()):
-        colors[key] = color_list[i]
 
-    fig, ax = plt.subplots()
-    ax.set_xlabel(r'$\Phi$ [rad]', size=12)
-    ax.set_ylabel(r'$\Psi$ [rad]', size=12)
-    ax.set_title(r'Definition of State regions')
-    hist = ax.hist2d(phi[:, 1], psi[:, 1], bins=100, density=True)
-    for state in rect_dict.keys():
-        state_recs = rect_dict[state]
-        c = colors[state]
-        for rec in state_recs:
-            add_rec_patch(ax, rec, dwidth=0.02, edgecolor=c, lw=3)
-    plt.text(2, 2, 'St1', color=colors['state1'], size=18)
-    plt.text(-0.5, 2, 'St2', color=colors['state2'], size=18)
-    plt.text(1, -.5, 'St3', color=colors['state3'], size=18)
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    # make numpy array out of tuple (transition)
+    if type(transition) == int:
+        trans_idx = np.array((transition, transition)) - 1
+    else:
+        trans_idx = np.array(transition) - 1
+    # place a text box in upper left in axes coords
+    ax.scatter(ref_data[0]*dt, ref_data[1][:, trans_idx[0], trans_idx[1]],
+               label='MD data', s=50, marker='s', facecolors='none', edgecolors='k', alpha=0.3)
+    for n_tau in tau_data.keys():
+        n_m_dt, T_to_m = tau_data[n_tau]
+        ax.text(0.9, 0.9, 'State '+str(transition), transform=ax.transAxes, fontsize=14,
+                verticalalignment='top', ha='right', bbox=props)
+        ax.plot(n_m_dt*dt, T_to_m[:, trans_idx[0], trans_idx[1]],
+                label=r'$\tau$ = {:.0f} ps'.format(int(n_tau)*dt))
+
+
+def plot_MSM_val(data_matrix, to_state='same', figsize=(11.69, 12)):
+    title_string = 'Validation of MSM model. Every column shows the results of a different state defition. '
+
+    grid_dict = {
+        'wspace': 0.0,
+        'hspace': 0.0
+    }
+    # Parameters passed on to the subplots call
+    params = {'xscale': 'log',
+              'xlim': (1, 400),
+              }
+
+    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=figsize,
+                             sharey='row', sharex='col', gridspec_kw=grid_dict, subplot_kw=params)
+    # add empty subplots to generate one x/y-label for all subplots
+    fig.add_subplot(111, frame_on=False)
+    plt.tick_params(labelcolor="none", bottom=False, left=False)
+    plt.xlabel("time in ps", fontsize=16)
+    plt.ylabel("occupation probability", fontsize=16)
+    # , bbox=dict(boxstyle='square', facecolor='none', edgecolor='k'))
+    axes[0, 0].set_title('State definition 1')
+    # , bbox=dict(boxstyle='square', facecolor='none', edgecolor='k'))
+    axes[0, 1].set_title('State definition 2')
+    # , bbox=dict(boxstyle='square', facecolor='none', edgecolor='k'))
+    axes[0, 2].set_title('State definition 3')
+    # iterate over the different state definitions (columns)
+    for def_idx, data in enumerate(data_matrix):
+        ref_data = data[0]
+        tau_data = data[1]
+        # iterate over the different states (rows)
+        for state_idx, ax in enumerate(axes[:, def_idx]):
+            state = state_idx+1
+            if to_state == 'same':
+                trans = state
+            else:
+                trans = np.array((state, to_state))
+            add_MSM_val(tau_data, ref_data, ax, transition=trans)
+    # create legend above all subplots
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=4, title=title_string, fontsize='x-large')
     plt.show()

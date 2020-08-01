@@ -2,14 +2,30 @@ import numpy as np
 
 
 def shrink_rec(rectangle, ds, where=['all']):
+    '''
+        Shrink a rectangle, by manipulating the indices in 'rectangle'.
+        Depending on 'where', the indices are changed.
+
+        Parameters
+        ----------
+        rectangle: list
+            contains the indices, specifying the rectangle
+        ds: float
+            amount by which the rectangle will be smaller
+        where: list of strings
+            define on which side the rectangle shall be made smaller
+            'all': all side
+            'l': left
+            'r': right
+            'b': bottom
+            't': top
+    '''
     rec = np.array(rectangle.copy())
     if len(rec.shape) == 3:
         print('ohauaha')
         for i, sub_rec in enumerate(rectangle):
             rectangle[i] = shrink_rec(sub_rec, ds=ds, where=where)
-    # if not any([x == y]):
-    #    print('where must be one of the following:\n"{}"\n"{}"\n"{}"\n"{}"\n"{}"'.format(
-    #    *['l', 'r', 'b', 't', 'all']))
+
     if 'all' in where:
         rec[:, 0] += ds
         rec[:, 1] -= ds
@@ -25,7 +41,21 @@ def shrink_rec(rectangle, ds, where=['all']):
 
 
 def change_core(rect_dict, ds):
+    '''
+        Take the dictionary, defining the rectangles, which have been assigned to the different states and move adjacent sides away from each other so that there is a gap between them.
 
+        Parameters
+        ----------
+        rect_dict: dictionary
+            original dictionary
+        ds: float
+            gap size [rad]
+
+        Return
+        ------
+        new_rec_dict: dictionary
+            new dictionary containing the indices, that specify the new rectangles
+    '''
     # divide ds by 2 to get a distance of ds between new rectangle sides
     ds = ds/2
     new_rec_dict = rect_dict.copy()
