@@ -97,13 +97,13 @@ def ramachandran_plot(phi, psi, xy_idx=[0.5, 0.5], figsize=[12, 5], bins=100):
 
     ax1.hlines(y=psi_c, xmin=-np.pi, xmax=np.pi, color='b')
     ax1.vlines(x=phi_c, ymin=-np.pi, ymax=np.pi, color='r')
-    ax1.set_xlabel('Phi [rad]')
-    ax1.set_ylabel('Psi [rad]')
+    ax1.set_xlabel(r'$\Phi$ [rad]')
+    ax1.set_ylabel(r'$\Psi$ [rad]')
     # add_rec_patch(ax1, [[-np.pi, np.pi], [-2, 1.3]])
-    ax2.plot(phi_edges[:-1], h[:, psi_idx], label='Psi:{:.3f}'.format(psi_c))
-    ax2.plot(psi_edges[:-1], h[phi_idx, :], label='Phi:{:.3f}'.format(phi_c), color='r')
+    ax2.plot(phi_edges[:-1], h[:, psi_idx], label=r'$\Psi$ :{:.3f}'.format(psi_c))
+    ax2.plot(psi_edges[:-1], h[phi_idx, :], label=r'$\Phi$ :{:.3f}'.format(phi_c), color='r')
     ax2.set_ylim(0, np.max(h))
-    ax2.set_xlabel('Phi/Psi [rad]')
+    ax2.set_xlabel(r'$\Phi/\Psi$ [rad]')
     ax2.set_ylabel('occupation propability along line')
     fig.colorbar(histogram[3], ax=ax1)
 
@@ -214,8 +214,8 @@ def plot_timp(tau_range_1, tau_range_2, s, axh_y=None, axv_x=None,  **kwargs):
     ax1.legend(fontsize=15)
     add_timp_plot(ax2, tau_range_1, s, ls=':', marker='x')
     ax2.axvline(x=axv_x)
-    ax2.axhline(y=48)
-    fig.suptitle(r'Implicit time scale as a function of the lag time $\tau$', fontsize=15)
+    ax2.axhline(y=axh_y)
+    fig.suptitle(r'Implie   d time scale as a function of the lag time $\tau$', fontsize=15)
     plt.show()
 
 
@@ -393,7 +393,7 @@ def calc_MSM_validation_data(n_tau_list, s, K):
     return [ref_data, tau_data]
 
 
-def add_MSM_val(tau_data, ref_data, ax, transition, dt=0.2, **kwargs):
+def add_MSM_val(tau_data, ref_data, ax, transition, dt=0.2, ref_points=30, **kwargs):
     '''
         Plot one of  elements of the transition matrices, calculated with calc_MSM_validation_data on an axis.
 
@@ -421,18 +421,24 @@ def add_MSM_val(tau_data, ref_data, ax, transition, dt=0.2, **kwargs):
         trans_idx = np.array((transition, transition)) - 1
     else:
         trans_idx = np.array(transition) - 1
-    # place a text box in upper left in axes coords
-    ax.scatter(ref_data[0]*dt, ref_data[1][:, trans_idx[0], trans_idx[1]],
+
+    # pick elements from ref_data[0], so that you get linear spacing in logarithmic representation
+    n_t = ref_data[0]
+    idx_max = np.log10(len(n_t)-1)
+    n_t_pick_log = (10**np.linspace(0, idx_max, ref_points)).astype(int)
+    ax.scatter(n_t[n_t_pick_log]*dt, ref_data[1][n_t_pick_log, trans_idx[0], trans_idx[1]],
                label='MD data', s=50, marker='s', facecolors='none', edgecolors='k', alpha=0.3)
     for n_tau in tau_data.keys():
         n_m_dt, T_to_m = tau_data[n_tau]
+        # place a text box in upper left in axes coords
         ax.text(0.9, 0.9, 'State '+str(transition), transform=ax.transAxes, fontsize=14,
                 verticalalignment='top', ha='right', bbox=props)
+        # plot data for n_tau
         ax.plot(n_m_dt*dt, T_to_m[:, trans_idx[0], trans_idx[1]],
                 label=r'$\tau$ = {:.0f} ps'.format(int(n_tau)*dt))
 
 
-def plot_MSM_val(data_matrix, to_state='same', figsize=(11.69, 12)):
+def plot_MSM_val(data_matrix, to_state='same', figsize=(11.69, 12), ref_points=30):
     title_string = 'Validation of MSM model. Every column shows the results of a different state defition. '
 
     grid_dict = {
@@ -468,7 +474,7 @@ def plot_MSM_val(data_matrix, to_state='same', figsize=(11.69, 12)):
                 trans = state
             else:
                 trans = np.array((state, to_state))
-            add_MSM_val(tau_data, ref_data, ax, transition=trans)
+            add_MSM_val(tau_data, ref_data, ax, transition=trans, ref_points=ref_points)
     # create legend above all subplots
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=4, title=title_string, fontsize='x-large')

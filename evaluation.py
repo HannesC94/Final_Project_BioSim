@@ -76,50 +76,28 @@ data_3 = calc_MSM_validation_data(n_tau_list, s_3, 3)
 
 data_matrix = np.array([data_1, data_2, data_3])
 
-# %% plot the MSM validation of all state definitions for all three states
-################################################################################
-title_string = 'Validation of MSM model. Every column shows the results of a different state defition. '
-
-grid_dict = {
-    'wspace': 0.0,
-    'hspace': 0.0
-}
-# Parameters passed on to the subplots call
-params = {'xscale': 'log',
-          'xlim': (5, 400),
-          }
-
-fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(11.69, 12),
-                         sharey='row', sharex='col', gridspec_kw=grid_dict, subplot_kw=params)
-# add empty subplots to generate one x/y-label for all subplots
-fig.add_subplot(111, frame_on=False)
-plt.tick_params(labelcolor="none", bottom=False, left=False)
-plt.xlabel("time in ps", fontsize=16)
-plt.ylabel("occupation probability", fontsize=16)
-# , bbox=dict(boxstyle='square', facecolor='none', edgecolor='k'))
-axes[0, 0].set_title('State definition 1')
-# , bbox=dict(boxstyle='square', facecolor='none', edgecolor='k'))
-axes[0, 1].set_title('State definition 2')
-# , bbox=dict(boxstyle='square', facecolor='none', edgecolor='k'))
-axes[0, 2].set_title('State definition 3')
-# iterate over the different state definitions (columns)
-for def_idx, data in enumerate(data_matrix):
-    ref_data = data[0]
-    tau_data = data[1]
-    # iterate over the different states (rows)
-    for state_idx, ax in enumerate(axes[:, def_idx]):
-        state = state_idx+1
-        add_MSM_val(tau_data, ref_data, ax, transition=(1, state))
-# create legend above all subplots
-handles, labels = axes[0, 0].get_legend_handles_labels()
-fig.legend(handles, labels, loc="upper center", ncol=4, title=title_string, fontsize='x-large')
-plt.show()
-
-
 # %%
 ################################################################################
-plot_MSM_val(data_matrix)
+plot_MSM_val(data_matrix, ref_points=100)
 #fig, axes = plt.subplots(3,3)
 # for i in range(3):
 #    for j in range(3):
 #        add_MSM_val(data_1[1], data_1[0], axes[i,j], transition=(i,j))
+
+np.log10(0.2)
+
+\begin{align}
+p(t +\tau) = &  (p_1(t), p_2(t), p_3(t))
+\left(begin{array}{ccc}
+      P_{11}(\tau) & P_{12}(\tau) & P_{13}(\tau)
+      P_{21}(\tau) & P_{22}(\tau) & P_{23}(\tau)
+      P_{31}(\tau) & P_{32}(\tau) & P_{33}(\tau)
+      \end{array}
+      \right)\\
+    & \left(begin{array}{c}
+            p_1(t)P
+            2
+            3
+            \end{array}
+            \right)
+\end{align}
