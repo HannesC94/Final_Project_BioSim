@@ -213,9 +213,9 @@ def plot_timp(tau_range_1, tau_range_2, s, axh_y=None, axv_x=None,  **kwargs):
                 * dt, color='y', label='region of interest')
     ax1.legend(fontsize=15)
     add_timp_plot(ax2, tau_range_1, s, ls=':', marker='x')
-    ax2.axvline(x=axv_x)
-    ax2.axhline(y=axh_y)
-    fig.suptitle(r'Implie   d time scale as a function of the lag time $\tau$', fontsize=15)
+    ax2.axvline(x=axv_x, ls=':')
+    ax2.axhline(y=axh_y, ls=':')
+    fig.suptitle(r'Implied time scales as a function of the lag time $\tau$', fontsize=15)
     plt.show()
 
 
@@ -323,7 +323,7 @@ def visualize_states(rect_dict, phi, psi, color_list, ax=None):
         fig, ax = plt.subplots()
     ax.set_xlabel(r'$\Phi$ [rad]', size=12)
     ax.set_ylabel(r'$\Psi$ [rad]', size=12)
-    ax.set_title(r'Definition of State regions')
+    ax.set_title(r'Definition of State regions', size=14)
     hist = ax.hist2d(phi[:, 1], psi[:, 1], bins=100, density=True)
     for state in rect_dict.keys():
         state_recs = rect_dict[state]
